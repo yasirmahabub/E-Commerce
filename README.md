@@ -432,3 +432,197 @@ e-commerce/
 ```
 
 ---
+
+## ✅ Step 4: Set Up User Signup Page
+
+To allow new users to sign up, we’ll configure templates, static and media files, and create the signup form and view.
+
+---
+
+### 🔧 4.1 Create the Base Template and Static Files
+
+First, set up the `templates` and `staticfiles` directories at the project root level.
+
+**Structure:**
+
+```plaintext
+e-commerce/
+    ├── templates/
+    │   └── base.html
+    └── staticfiles/
+        ├── css/
+        ├── js/
+        └── images/
+```
+
+Add shared layout (e.g., navigation bar, footer) in `base.html`, and include all CSS, JS, and image files in `staticfiles`.
+
+---
+
+### ⚙️ 4.2 Update `settings.py` for Templates, Static and Media Files
+
+In your `settings.py`, add the following configurations:
+
+```python
+import os
+
+# Templates
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [os.path.join(BASE_DIR, "templates")],
+        # ...
+    }
+]
+
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = "/static/"
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "staticfiles")]
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+# Media files (Uploaded by users)
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+```
+
+This configuration does the following:
+
+- Uses `templates/` for global HTML templates.
+- Serves static files from `staticfiles/` during development and collects them into `static/` during production.
+- Handles user-uploaded content through the `media/` directory. User profile image, product images etc will be stored here.
+
+---
+
+### 🌐 4.3 Serve Static and Media Files in `Fastkart/urls.py`
+
+In `Fastkart/urls.py`, add static and media file serving when `DEBUG=True`:
+
+```python
+from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import path
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+```
+
+---
+
+### 🚫 4.4 Exclude Static and Media Directories from Git
+
+Add the following to your `.gitignore` file to avoid committing static and media files:
+
+```plaintext
+static/
+media/
+```
+
+> The `staticfiles` and `static` directories are not the same. The `staticfiles` directory contains all your CSS and JavaScript code during development and should be committed to Git. In contrast, the `static` directory is typically used in production to serve the collected static files.
+
+---
+
+### 🧾 4.5 Create Signup Form in `users/forms.py`
+
+Inside the `users` app, create a file named `forms.py` and define a registration form:
+
+```python
+from django.contrib.auth.forms import UserCreationForm
+from .models import CustomUser
+
+class CustomUserRegistrationForm(UserCreationForm):
+    class Meta:
+        model = CustomUser
+        fields = ["username", "first_name", "last_name", "email", "password1", "password2"]
+```
+
+This form inherits from Django’s built-in `UserCreationForm` and uses the `CustomUser` model.
+
+---
+
+### 🧠 4.6 Create the Signup View in `users/views.py`
+
+Add the following logic to handle form submission and validation:
+
+```python
+from django.contrib import messages
+from django.shortcuts import redirect, render
+from .forms import CustomUserRegistrationForm
+
+def user_signup(request):
+    if request.method == "POST":
+        form = CustomUserRegistrationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            # TODO: send verfication email to user
+            messages.info(request, "We have sent you an verfication email")
+            return redirect("signup")
+        return render(request, "users/signup.html", context={"form": form})
+    
+    form = CustomUserRegistrationForm()
+    return render(request, "users/signup.html", context={"form": form})
+```
+
+---
+
+### 🗂 4.7 Create the Signup Template
+
+Place the signup HTML file here:
+
+```plaintext
+users/templates/users/signup.html
+```
+
+In the template, make sure to load static files and extend `base.html`.
+
+```django
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Sign In{% endblock %}
+
+{% block content %}
+<!-- Write Signup Page Content Here -->
+{% endblock %}
+```
+
+---
+
+### 🌐 4.8 Add URL Patterns in `users/urls.py`
+
+Create `users/urls.py` and register the signup view:
+
+```python
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path("signup/", views.user_signup, name="signup"),
+]
+```
+
+Then include this in the main `urls.py`:
+
+```python
+# Fastkart/urls.py
+# ...
+from django.urls import include, path
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("users/", include("users.urls")),
+]
+
+# ...
+```
+
+---
+
+Once the setup is complete, open your browser and go to `http://127.0.0.1:8000/users/signup/`. This URL should display the user registration form.
+
+- Try creating a new account to ensure the registration process works as expected.
+- Intentionally trigger form validation errors (e.g., leave fields empty or enter mismatched passwords) to confirm that error messages are shown correctly.
