@@ -239,3 +239,196 @@ Now, open your browser and visit:
 You should see the Django welcome page, which confirms your project is working!
 
 ---
+
+## 👤 Step 3: Set Up the Users App
+
+In this step, we'll create a dedicated Django app for managing users and define a custom user model. Using a custom user model from the start is a best practice in Django, as it allows you to easily add fields (like profile pictures, addresses, etc.) later without complex database migrations.
+
+### 🖼️ 3.1 Install Pillow for Image Handling
+
+Since our custom user model will include a profile_picture field (an ImageField), we need to install the Pillow library, which Django uses for image processing.
+
+Make sure your virtual environment is activated, then run:
+
+```bash
+pip install Pillow
+```
+
+---
+
+### ➕ 3.2 Create the Users App
+
+Now, let's create a new Django app specifically for handling user-related functionality.
+
+From your project root (e-commerce/, where manage.py is located), run:
+
+```bash
+python manage.py startapp users
+```
+
+This command creates a new directory named `users` with the basic app structure inside your project.
+
+---
+
+### ⚙️ 3.3 Register the Users App
+
+For Django to recognize and use the new users app, you need to register it in your project's settings.
+
+Open the `FastKart/settings.py` file and add "users" to the INSTALLED_APPS list:
+
+```python
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    "users", # Add this line
+]
+
+# ... rest of the settings
+```
+
+---
+
+### 📝 3.4 Define the Custom User Model
+
+Now, let's define our CustomUser model. This model will inherit from Django's built-in AbstractUser but add extra fields for email (made unique), verification status, address details, mobile number, and a profile picture.
+
+Open the `users/models.py` file and replace its content with the following:
+
+```python
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
+
+class CustomUser(AbstractUser):
+    email = models.EmailField(unique=True)
+    is_verified = models.BooleanField(default=False)
+
+    address = models.CharField(null=True, blank=True, max_length=255)
+    city = models.CharField(null=True, blank=True, max_length=30)
+    postcode = models.CharField(null=True, blank=True, max_length=10)
+    mobile = models.CharField(null=True, blank=True, max_length=15)
+    profile_picture = models.ImageField(null=True, blank=True, upload_to="users/profile")
+```
+
+---
+
+### 🔒 3.5 Tell Django to Use the Custom User Model
+
+You need to tell Django to use your new CustomUser model instead of the default one.
+
+Open `FastKart/settings.py` again and add the following line at the bottom:
+
+```python
+# ... (rest of your settings)
+
+# Tell Django to use our custom user model
+AUTH_USER_MODEL = "users.CustomUser"
+```
+
+---
+
+### 📊 3.6 Register the Custom User Model in the Admin Site
+
+To manage your CustomUser model through Django's admin interface, you need to register it.
+
+Open `users/admin.py` and add the following code:
+
+```python
+from django.contrib import admin
+
+from .models import CustomUser
+
+
+admin.site.register(CustomUser)
+```
+
+---
+
+### 🧬 3.7 Create Database Migrations
+
+Whenever you make changes to your models (like adding a new model or adding fields to an existing one), you need to create database migrations. Migrations are Django's way of propagating changes to your database schema.
+
+From your project root (e-commerce/), with the virtual environment activated, run:
+
+```bash
+python manage.py makemigrations
+```
+
+You should see output indicating that a new migration file was created in the users/migrations/ directory. This file contains the instructions to create the CustomUser table in the database.
+
+---
+
+### 💾 3.8 Apply Database Migrations
+
+Now that the migration file is created, you need to apply it to your database. This command reads the migration file and executes the necessary SQL commands to modify your database schema.
+
+Run the following command:
+
+```bash
+python manage.py migrate
+```
+
+This will apply the migration for your users app, as well as any pending migrations for Django's built-in apps (like auth, admin, etc.) which haven't been applied yet.
+
+---
+
+### 🦸 3.9 Create a Superuser
+
+To access the Django admin site and test your custom user model, you'll need a superuser account.
+
+Run the following command and follow the prompts to create a username, email, and password:
+
+```bash
+python manage.py createsuperuser
+```
+
+---
+
+### ✅ 3.10 Verify in the Admin Site
+
+Finally, let's verify that your custom user model is working correctly in the admin interface.
+
+Start the development server:
+
+```bash
+python manage.py runserver
+```
+
+Open your browser and navigate to the admin URL:
+👉 `http://127.0.0.1:8000/admin/`
+
+Log in with the superuser credentials you just created. You should now see "Users" listed under the "USERS" section. Click on "Users" and then click on your superuser account. You should see the standard user fields along with the new custom fields you added (email, is_verified, address, city, postcode, mobile, profile_picture).
+
+✅ After this step, your folder structure should look something like this:
+
+```plaintext
+e-commerce/
+    ├── .git/
+    ├── .gitignore
+    ├── LICENSE
+    ├── README.md
+    ├── FastKart/              # Your Django project directory
+    │   ├── __init__.py
+    │   ├── asgi.py
+    │   ├── settings.py        # Updated with 'users' app and AUTH_USER_MODEL
+    │   ├── urls.py
+    │   └── wsgi.py
+    ├── manage.py
+    ├── users/                 # Your new Django app directory
+    │   ├── migrations/        # Contains migration files (e.g., 0001_initial.py)
+    │   │   └── __init__.py
+    │   ├── __init__.py
+    │   ├── admin.py           # Updated to register CustomUser
+    │   ├── apps.py
+    │   ├── models.py          # Updated with CustomUser model
+    │   ├── tests.py
+    │   └── views.py
+    ├── venv/                  # Your virtual environment (ignored by Git)
+    └── requirements.txt       # Updated with Pillow and Django
+```
+
+---
